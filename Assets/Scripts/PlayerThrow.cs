@@ -14,6 +14,10 @@ public class PlayerThrow : MonoBehaviour
 
     public float throwForce = 15f;      
     public float upwardArc = 0.5f; 
+    
+    [Header("Atış Sınırları")]
+    [Tooltip("Karakterin önüne göre maksimum sağ/sol fırlatma açısı")]
+    public float maxThrowAngle = 45f;
 
     private Vector3 targetPoint; 
     private Animator animator;
@@ -51,8 +55,8 @@ public class PlayerThrow : MonoBehaviour
                 // 2. Animasyonu başlat
                 animator.SetTrigger("Throw");
                 
-                // (İsteğe bağlı) Çizgiyi fırlatma sırasında gizlemek istersen şu satırı açabilirsin:
-                // trajectoryPredictor.SetTrajectoryVisible(false); 
+                // Çizgiyi ve Hit Marker'ı fırlatma sırasında gizle
+                trajectoryPredictor.SetTrajectoryVisible(false); 
             }
         }
     }
@@ -62,7 +66,41 @@ public class PlayerThrow : MonoBehaviour
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out RaycastHit hit, 100f))
         {
-            targetPoint = hit.point;
+            Vector3 hitPoint = hit.point;
+            
+            // Karakterden hedefe olan yatay yönü bul
+            Vector3 directionToHitFlat = new Vector3(hitPoint.x - transform.position.x, 0f, hitPoint.z - transform.position.z);
+            Vector3 forwardFlat = new Vector3(transform.forward.x, 0f, transform.forward.z);
+
+            if (directionToHitFlat.sqrMagnitude > 0.001f && forwardFlat.sqrMagnitude > 0.001f)
+            {
+                // Karakterin baktığı yön ile hedefin yönü arasındaki açıyı bul
+                float angle = Vector3.SignedAngle(forwardFlat, directionToHitFlat, Vector3.up);
+
+                // Eğer açı sınırların dışındaysa
+                if (Mathf.Abs(angle) > maxThrowAngle)
+                {
+                    // Açıyı maxThrowAngle ile sınırla (örneğin -45 ile +45 arası)
+                    float clampedAngle = Mathf.Clamp(angle, -maxThrowAngle, maxThrowAngle);
+                    
+                    // İleri vektörünü sınırlandırılmış açı kadar döndür
+                    Quaternion rotation = Quaternion.AngleAxis(clampedAngle, Vector3.up);
+                    Vector3 clampedDirection = rotation * forwardFlat;
+
+                    // Orijinal yatay uzaklığı koru
+                    float distance = directionToHitFlat.magnitude;
+                    targetPoint = transform.position + clampedDirection.normalized * distance;
+                    targetPoint.y = hitPoint.y; // Orijinal yüksekliği koru
+                }
+                else
+                {
+                    targetPoint = hitPoint;
+                }
+            }
+            else
+            {
+                targetPoint = hitPoint;
+            }
         }
     }
 
@@ -91,6 +129,14 @@ public class PlayerThrow : MonoBehaviour
     {
         // Topu GERÇEK hareketli el pozisyonundan yarat
         GameObject newBall = Instantiate(ballPrefab, throwSpawnPoint.position, throwSpawnPoint.rotation);
+        
+        // Çarpma anında topun yok olması için yazdığımız componenti ekle
+        newBall.AddComponent<BallCollision>();
+
+        // ÖNEMLİ: Çizilen tahmin çizgisinin (Raycast) havada uçan topa çarpıp HitMarker'ı 
+        // topun üzerine koymasını engellemek için topu "Ignore Raycast" katmanına (Layer 2) alıyoruz.
+        newBall.layer = 2;
+
         Rigidbody rb = newBall.GetComponent<Rigidbody>();
         
         if (rb != null)
@@ -102,8 +148,6 @@ public class PlayerThrow : MonoBehaviour
             rb.AddForce(forceDirection * throwForce, ForceMode.Impulse);
         }
         
-        Destroy(newBall, 10f);
-
         // Fırlatma bitti, tekrar nişan almaya dönebiliriz
         isThrowing = false;
     }
