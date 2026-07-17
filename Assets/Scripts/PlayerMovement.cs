@@ -10,9 +10,9 @@ public class PlayerMovement : MonoBehaviour
     private Animator animator;
 
     [Header("Hareket Ayarları")]
-    private float walkSpeed = 3f;
-    private float runSpeed = 5f;
-    private float rotationSpeed = 10f;
+    public float walkSpeed = 3f;
+    public float runSpeed = 5f;
+    public float rotationSpeed = 10f;
 
     [Header("Yerçekimi Ayarları")]
     private float gravity = -9.81f;
@@ -23,9 +23,9 @@ public class PlayerMovement : MonoBehaviour
     private float currentAnimSpeed = 0f;
 
     [Header("Dayanıklılık (Stamina) Ayarları")]
-    private float maxSprintTime = 1.5f;
+    public float maxSprintTime = 1.5f;
     private float currentSprintTime;
-    private float rechargeTime = 4f;
+    public float rechargeTime = 4f;
     private bool isExhausted = false;
 
     [Header("Arayüz (UI) Ayarları")]
@@ -126,6 +126,4 @@ public class PlayerMovement : MonoBehaviour
         animator.SetFloat("Speed", currentAnimSpeed);
     }
     
-    // Geçen sefer eklediğimiz kutu itme fonksiyonu (OnControllerColliderHit) 
-    // scriptin en altında durmaya devam edebilir.
 }
