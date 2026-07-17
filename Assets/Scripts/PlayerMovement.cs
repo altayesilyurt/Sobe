@@ -126,6 +126,4 @@ public class PlayerMovement : MonoBehaviour
         animator.SetFloat("Speed", currentAnimSpeed);
     }
     
-    // Geçen sefer eklediğimiz kutu itme fonksiyonu (OnControllerColliderHit) 
-    // scriptin en altında durmaya devam edebilir.
 }
